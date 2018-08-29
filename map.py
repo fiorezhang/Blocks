@@ -1,18 +1,17 @@
 #coding:utf-8
 #copyright: fiorezhang@sina.com
 
+'''
+每辆车自带时间戳，每次行动前先判断是否在“当前位置”（一个街道段）呆了足够长时间，即记录time_last_move，只有time_current大于它一定阈值才能进行后面的移动判断
+出生点和目的地，用红蓝色带alpha通道的颜色标记
+车辆走过的格子保留痕迹，也是alpha通道，若干回合后消失
+车辆挂靠在道路的list内，到了十字路口，经过判断，挂靠到十字路口（独占），然后挂靠到下一条路的list内
+'''
+
 import numpy as np
 
 BLOCK_MIN = 5
 BLOCK_MAX = 9
-
-def closeCell(a_x, a_y, b_x, b_y):
-    if a_x == b_x and abs(a_y - b_y) == 1:
-        return True
-    elif abs(a_x - b_x) == 1 and a_y == b_y: 
-        return True
-    else:
-        return False
 
 def generateRandList(len, min, max):
     ''' Generate list in [0, x1, x2, x3, ... len]
@@ -37,6 +36,7 @@ def generateRandList(len, min, max):
             break
     return list        
         
+
 class Map():
     def __init__(self, w, h):
         self.__w = w
@@ -129,6 +129,8 @@ class Cross():
 
         self.__road_en_dict = {'E':None, 'S':None, 'W':None, 'N':None}
         self.__road_ex_dict = {'E':None, 'S':None, 'W':None, 'N':None}
+
+        self.__car = None
         
     def getPos(self):
         return self.__pos
@@ -175,6 +177,9 @@ class Cross():
             elif pos_en[0] == pos_ex[0] and pos_en[1] > pos_ex[1]:
                 self.__road_ex_dict['S'] = road
 
+    def getCar(self):
+        return self.__car
+
 class Road():
     def __init__(self, pos_en, pos_ex):
         assert pos_en[0] == pos_ex[0] or pos_en[1] == pos_ex[1]
@@ -183,18 +188,27 @@ class Road():
         
         if pos_en[0] < pos_ex[0] and pos_en[1] == pos_ex[1]:
             self.__direct = 'E'
+            self.__length = pos_ex[0] - pos_en[1] + 1
         elif pos_en[0] == pos_ex[0] and pos_en[1] < pos_ex[1]:
             self.__direct = 'S'
+            self.__length = pos_ex[1] - pos_en[1] + 1
         elif pos_en[0] > pos_ex[0] and pos_en[1] == pos_ex[1]:
             self.__direct = 'W'
+            self.__length = pos_en[0] - pos_ex[0] + 1
         elif pos_en[0] == pos_ex[0] and pos_en[1] > pos_ex[1]:
             self.__direct = 'N'
+            self.__length = pos_en[1] - pos_ex[1] + 1
+
+        self.__car_list = []
         
     def getPos(self):
         return self.__pos_en, self.__pos_ex
 
     def getDirect(self):
         return self.__direct
+
+    def getLength(self):
+        return self.__length
         
     def getRoadReverse(self):
         ''' Find the entry cross firstly, then find the cross' exit dict, then select the 'same' direction road, that's the reverse one
@@ -214,32 +228,51 @@ class Road():
         elif self.__pos_ex == pos:
             self.__cross_ex = cross 
 
-class Car():
-    def __init__(self, init_x, init_y, dest_x, dest_y):
-        self.__init_x = init_x
-        self.__init_y = init_y
-        self.__dest_x = dest_x
-        self.__dest_y = dest_y
-        self.__crnt_x = init_x
-        self.__crnt_y = init_y
-        
-        self.__init = [init_x, init_y]
-        self.__dest = [dest_x, dest_y]
-        self.__crnt = [init_x, init_y]
-        
-    def move(self, next_x, next_y):
-        assert closeCell(self.__crnt_x, self.__crnt_y, next_x, next_y)
-        self.__crnt_x, self.__crnt_y = next_x, next_y
-        self.__crnt = [self.__crnt_x, self.__crnt_y]
-        
-    def get(self):
-        return self.__crnt
-        
-    def dest(self):
-        if self.__crnt_x == self.__dest_x and self.__crnt_y == self.__dest_y:
-            return True
+    def insertCar(self, car):
+        pass
+
+    def deleteCar(self, car):
+        pass
+
+    def getCarList(self):
+        return self.__car_list
+
+    def getCarLast(self, car):
+        assert car in self.__car_list
+        i = self.__car_list.index(car)
+        if i > 0:
+            return self.__car_list[i-1]
         else:
-            return False
+            return None
+
+    def getCarNext(self, car):
+        assert car in self.__car_list
+        i = self.__car_list.index(car)
+        if i < len(self.__car_list) - 1:
+            return self.__car_list[i+1]
+        else:
+            return None
+
+class Car():
+    def __init__(self, road_src, offset_src, road_dst, offset_dst):
+        self.__road_src = road_src
+        self.__offset_src = offset_src
+        self.__road_dst = road_dst
+        self.__offset_dst = offset_dst
+
+        self.__state = STATE["START"]
+        self.__road_crt = road_src
+        self.__offset_crt = offset_src
+
+    def getRoad(self):
+        return self.__road_crt
+
+    def getOffset(self):
+        return self.__offset_crt
+
+    def move(self):
+        pass
+
 
 if __name__ == '__main__':
     print("==TEST== Class Map")
@@ -386,3 +419,6 @@ if __name__ == '__main__':
 
     print("-- 4 -- getDirect")
     print(road.getDirect())
+
+    print("-- 5 -- getDirect")
+    print(road.getLength())
