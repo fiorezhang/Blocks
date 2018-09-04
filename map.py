@@ -13,8 +13,8 @@ import time
 
 BLOCK_MIN = 5
 BLOCK_MAX = 9
-TIME_CAR = 1
-TIME_CROSS = 3
+TIME_CAR = 0.5
+TIME_CROSS = 1
 
 STATE = {"START":0, "MOVE":1, "CROSS":2, "END":3}
 
@@ -246,6 +246,9 @@ class Cross():
 
     def setCar(self, car):
         self.__car = car
+        
+    def clrCar(self):
+        self.__car = None
 
 class Road():
     def __init__(self, pos_en, pos_ex):
@@ -306,17 +309,37 @@ class Road():
             elif car_offset < c.getOffset():
                 break
         self.__car_list.insert(car_index, car)
+        '''
+        print("INSERT CAR")
+        print(self.getPos())
+        print(car)
+        print(self.__car_list)
+        '''
         return True
 
     def removeCar(self, car):
         assert car in self.__car_list
         self.__car_list.remove(car)
+        '''
+        print("REMOVE CAR")
+        print(self.getPos())
+        print(car)
+        print(self.__car_list)
+        '''
 
     def getCarList(self):
         return self.__car_list
 
     def getCarLast(self, car):
         assert car in self.__car_list
+        '''
+        if not car in self.__car_list:
+            print("ERROR")
+            print(car.getRoad().getPos())
+            print(self.getPos())
+            print(car)
+            print(self.__car_list)
+        '''
         i = self.__car_list.index(car)
         if i > 0:
             return self.__car_list[i-1]
@@ -366,32 +389,33 @@ class Car():
         if time.time() - self.__time_last < TIME_CAR:
             return
         if self.__state == STATE["START"]:
-            if self.__road_src.insertCar(self) == True:
+            if self.__road_crt.insertCar(self) == True:
                 self.__state = STATE["MOVE"]
             else:
                 pass #wait
         elif self.__state == STATE["MOVE"]:
-            car_last = self.__road_crt.getCarLast(self)
-            if car_last != None and self.__offset_crt - car_last.getOffset() > 1:
-                self.__offset_crt -= 1
-                self.__time_last = time.time()
-            elif self.__offset_crt > 0:
-                self.__offset_crt -= 1
-                self.__time_last = time.time()
-            else:
-                road = self.getRoad()
-                cross = road.getCrossExit()
-                if cross.getDirectEnabled() == road.getDirect():
-                    self.__state = STATE["CROSS"]
-                    self.__cross = cross
-                    self.__road_crt = None
-                    self.__offset_crt = None
-                    cross.setCar(self)
-                    road.removeCar(self)
             if self.__road_crt == self.__road_dst and self.__offset_crt == self.__offset_dst:
                 self.__state = STATE["END"]
                 road = self.getRoad()
                 road.removeCar(self)
+            else:
+                car_last = self.__road_crt.getCarLast(self)
+                if car_last != None and self.__offset_crt - car_last.getOffset() > 1:
+                    self.__offset_crt -= 1
+                    self.__time_last = time.time()
+                elif self.__offset_crt > 1:
+                    self.__offset_crt -= 1
+                    self.__time_last = time.time()
+                else:
+                    road = self.getRoad()
+                    cross = road.getCrossExit()
+                    if cross.getDirectEnabled() == road.getDirect() and cross.getCar() == None:
+                        self.__state = STATE["CROSS"]
+                        self.__cross = cross
+                        self.__road_crt = None
+                        self.__offset_crt = None
+                        cross.setCar(self)
+                        road.removeCar(self)
         elif self.__state == STATE["CROSS"]:
             cross = self.__cross
             cross_dst = self.__road_dst.getCrossEntry()
@@ -425,6 +449,7 @@ class Car():
             self.__cross = None
             self.__road_crt = road_entry
             self.__offset_crt = road_entry.getLength() - 1
+            cross.clrCar()
             road_entry.insertCar(self)
         return
 
@@ -604,9 +629,10 @@ if __name__ == '__main__':
     print("==TEST==")
     round = 0
     while True:
-        if round == 0:
+        if round >= 0:
             map.addCarRandom()
         map.update()
+        '''
         for car in map.getCarList():
             print("STATE: ", car.getState())
             road = car.getRoad()
@@ -617,5 +643,16 @@ if __name__ == '__main__':
                 print("OFFSET: ", offset)
             if cross != None:
                 print("CROSS: ", cross.getPos())
-        time.sleep(0.4)
+        '''
+        num_move = 0
+        num_cross = 0
+        for car in map.getCarList():
+            if car.getState() == STATE["MOVE"]:
+                num_move += 1
+            elif car.getState() == STATE["CROSS"]:
+                num_cross += 1
+        time.sleep(0.1)
         round += 1
+        print("ROUND: ", round)
+        print("CAR MOVE: ", num_move)
+        print("CAR CROSS: ", num_cross)
