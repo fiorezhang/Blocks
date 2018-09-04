@@ -361,11 +361,13 @@ class Car():
         self.__road_dst = road_dst
         self.__offset_dst = offset_dst
 
+        
         print("ROAD SRC: ", road_src.getPos())
         print("OFFS SRC: ", offset_src)
         print("ROAD DST: ", road_dst.getPos())
         print("OFFS DST: ", offset_dst)
-
+        
+        
         self.__state = STATE["START"]
         self.__road_crt = road_src
         self.__offset_crt = offset_src
@@ -411,13 +413,13 @@ class Car():
                     cross = road.getCrossExit()
                     if cross.getDirectEnabled() == road.getDirect() and cross.getCar() == None:
                         self.__state = STATE["CROSS"]
-                        self.__cross = cross
+                        self.__cross_crt = cross
                         self.__road_crt = None
                         self.__offset_crt = None
                         cross.setCar(self)
                         road.removeCar(self)
         elif self.__state == STATE["CROSS"]:
-            cross = self.__cross
+            cross = self.__cross_crt
             cross_dst = self.__road_dst.getCrossEntry()
             if calculateCrossDistance(cross, cross_dst) == 0: #reach the last road
                 road_entry = self.__road_dst
@@ -440,13 +442,13 @@ class Car():
                         direct_next = direct
                     elif distance == distance_min and np.random.randint(2)>0: #half odd
                         direct_next = direct 
-                    print("direct: ", direct)
-                    print("distance: ", distance)
-                print("direct_next: ", direct_next)
+                    #print("direct: ", direct)
+                    #print("distance: ", distance)
+                #print("direct_next: ", direct_next)
                 road_entry = cross.getRoadEntryDict()[direct_next]
 
             self.__state = STATE["MOVE"]
-            self.__cross = None
+            self.__cross_crt = None
             self.__road_crt = road_entry
             self.__offset_crt = road_entry.getLength() - 1
             cross.clrCar()
@@ -651,7 +653,7 @@ if __name__ == '__main__':
                 num_move += 1
             elif car.getState() == STATE["CROSS"]:
                 num_cross += 1
-        time.sleep(0.1)
+        time.sleep(0.2)
         round += 1
         print("ROUND: ", round)
         print("CAR MOVE: ", num_move)
