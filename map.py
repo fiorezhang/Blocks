@@ -10,11 +10,13 @@
 
 import numpy as np
 import time
+import uuid
 
 BLOCK_MIN = 5
 BLOCK_MAX = 9
-TIME_CAR = 1
-TIME_CROSS = 3
+TIME_CAR = 0.3#1
+TIME_CROSS = 1#3
+TIME_ADD_CAR = 1#5
 
 STATE = {"START":0, "MOVE":1, "CROSS":2, "END":3}
 
@@ -47,15 +49,20 @@ def calculateCrossDistance(cross_a, cross_b):
      return abs(pos_a[0]-pos_b[0]) + abs(pos_a[1]-pos_b[1])        
 
 class Map():
-    def __init__(self, w, h):
+    def __init__(self, w, h, b_min=BLOCK_MIN, b_max=BLOCK_MAX, t_add_car=TIME_ADD_CAR, n_add_car=1, t_cross=TIME_CROSS, t_car=TIME_CAR):
         self.__w = w
         self.__h = h
         self.__cross_list = []
         self.__road_list = []
         self.__car_list = []
+        self.__time_last = time.time()
+        self.__time_add_car = t_add_car
+        self.__num_add_car = n_add_car
+        self.__time_cross = t_cross
+        self.__time_car = t_car
 
-        self.__cross_x_list = generateRandList(w-1, BLOCK_MIN, BLOCK_MAX)
-        self.__cross_y_list = generateRandList(h-1, BLOCK_MIN, BLOCK_MAX)
+        self.__cross_x_list = generateRandList(w-1, b_min, b_max)
+        self.__cross_y_list = generateRandList(h-1, b_min, b_max)
 
         for y in self.__cross_y_list:
             for x in self.__cross_x_list: 
@@ -71,20 +78,6 @@ class Map():
                     cross_next.linkRoad(road)
                     road.linkCross(cross)
                     road.linkCross(cross_next)
-
-    def addCarRandom(self):
-        index_road_src = np.random.randint(len(self.__road_list))
-        index_road_dst = np.random.randint(len(self.__road_list))
-        road_src = self.__road_list[index_road_src]
-        road_dst = self.__road_list[index_road_dst]
-        offset_src = np.random.randint(1, road_src.getLength()-1)
-        offset_dst = np.random.randint(1, road_dst.getLength()-1)
-        car = Car(road_src, offset_src, road_dst, offset_dst)
-        self.__car_list.append(car)
-
-    def removeCar(self, car):
-        assert car in self.__car_list
-        self.__car_list.remove(car)
 
     def getSize(self):
         return self.__w, self.__h
@@ -147,16 +140,35 @@ class Map():
     def getCarList(self):
         return self.__car_list
 
+    def addCarRandom(self, num=1):
+        for _ in range(num):
+            index_road_src = np.random.randint(len(self.__road_list))
+            index_road_dst = np.random.randint(len(self.__road_list))
+            road_src = self.__road_list[index_road_src]
+            road_dst = self.__road_list[index_road_dst]
+            offset_src = np.random.randint(1, road_src.getLength()-1)
+            offset_dst = np.random.randint(1, road_dst.getLength()-1)
+            car = Car(road_src, offset_src, road_dst, offset_dst, self.__time_car)
+            self.__car_list.append(car)
+
+    def removeCar(self, car):
+        assert car in self.__car_list
+        self.__car_list.remove(car)
+
     def update(self):
         for cross in self.__cross_list:
-            cross.updateDirectEnabled()
+            if time.time() - cross.getTimer() > np.random.randint(self.__time_cross*10, self.__time_cross*20) / 10: 
+                cross.updateDirectEnabled()
+                cross.setTimer()
 
         for car in self.__car_list.copy():
             car.update()
             if car.getState() == STATE["END"]:
                 self.removeCar(car)
 
-       #TODO: add car 
+        if time.time() - self.__time_last > self.__time_add_car: 
+            self.addCarRandom(self.__num_add_car)
+            self.__time_last = time.time()
 
 class Cross():
     def __init__(self, pos):
@@ -220,26 +232,29 @@ class Cross():
         self.__direct = direct
 
     def updateDirectEnabled(self):
-        if time.time() - self.__time_last < TIME_CROSS:
-            return
-        else:
-            direct = self.__direct
-            if direct == "E": 
-                self.__direct = "S"
-            elif direct == "S":
-                self.__direct = "W"
-            elif direct == "W":
-                self.__direct = "N"
-            elif direct == "N":
-                self.__direct = "E"
-            self.__time_last = time.time()
-            return
+        direct = self.__direct
+        if direct == "E": 
+            self.__direct = "S"
+        elif direct == "S":
+            self.__direct = "W"
+        elif direct == "W":
+            self.__direct = "N"
+        elif direct == "N":
+            self.__direct = "E"
+        return
 
     def getDirectEnabled(self):
         ''' enable the direction towards the car's facing direction. Ex: "E" means road from west to east can release the first car
         '''
         return self.__direct
         
+    def getTimer(self):
+        return self.__time_last
+
+    def setTimer(self, t=0):
+        if t == 0:
+            t = time.time()
+        self.__time_last = t
 
     def getCar(self):
         return self.__car
@@ -355,25 +370,41 @@ class Road():
             return None
 
 class Car():
-    def __init__(self, road_src, offset_src, road_dst, offset_dst):
+    def __init__(self, road_src, offset_src, road_dst, offset_dst, t_car):
         self.__road_src = road_src
         self.__offset_src = offset_src
         self.__road_dst = road_dst
         self.__offset_dst = offset_dst
-
-        
-        print("ROAD SRC: ", road_src.getPos())
-        print("OFFS SRC: ", offset_src)
-        print("ROAD DST: ", road_dst.getPos())
-        print("OFFS DST: ", offset_dst)
-        
-        
         self.__state = STATE["START"]
         self.__road_crt = road_src
         self.__offset_crt = offset_src
         self.__cross_crt = None
+        self.__time_car = t_car
         self.__time_start = time.time()
         self.__time_last = self.__time_start
+        self.__id = uuid.uuid4()
+
+        print("ID: ", self.__id)
+        print("SRC: ", road_src.getPos(), "\t", offset_src)
+        print("DST: ", road_dst.getPos(), "\t", offset_dst)
+        
+    def getId(self):
+        return self.__id
+
+    def getTimerStart(self):
+        return self.__time_start
+
+    def getRoadSrc(self):
+        return self.__road_src
+
+    def getOffsetSrc(self):
+        return self.__offset_src
+
+    def getRoadDst(self):
+        return self.__road_dst
+
+    def getOffsetDst(self):
+        return self.__offset_dst
 
     def getState(self):
         return self.__state
@@ -388,7 +419,7 @@ class Car():
         return self.__cross_crt
 
     def update(self):
-        if time.time() - self.__time_last < TIME_CAR:
+        if time.time() - self.__time_last < self.__time_car:
             return
         if self.__state == STATE["START"]:
             if self.__road_crt.insertCar(self) == True:
