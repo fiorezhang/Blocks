@@ -12,7 +12,8 @@ from map import Map, Cross, Road, Car, STATE
 
 #====全局
 FPS = 30
-BASIC_UNIT = 12
+FONT_SIZE = 20
+BASIC_UNIT = 20
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 MAP_WIDTH = 600
@@ -27,10 +28,12 @@ assert MAIN_HEIGHT % BASIC_UNIT == 0
 
 BLOCK_MIN = 5
 BLOCK_MAX = 9
-TIME_ADD_CAR = 3
+TIME_ADD_CAR = 0.5
 NUM_ADD_CAR = 1
-TIME_CROSS = 3
-TIME_CAR = 0.5
+TIME_CROSS = 1
+TIME_CAR = 0.2
+NUM_ADD_CAR_MANUAL = 10
+DELAY_ADD_CAR_MANUAL = 0.1
 #====颜色
 BLACK           = (  0,   0,   0)
 WHITE           = (255, 255, 255)
@@ -84,14 +87,17 @@ def runGame():
         
         key = checkForKeyEvent()
         if key == K_SPACE:
-            map.addCarRandom(1) 
+            map.addCarRandom(NUM_ADD_CAR_MANUAL, DELAY_ADD_CAR_MANUAL) 
         for i, k in enumerate([K_0, K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9]):
             if key == k:
                 option = i
 
+        num_start, num_move, num_cross, num_end = map.count()        
+                
         #绘图步骤 --------
         drawBackground()
         drawMap(map, option)
+        drawMessage(num_start, num_move, num_cross, num_end)
         
         pygame.display.update()
         fps_lock.tick(FPS)
@@ -168,13 +174,13 @@ def drawMap(map, option=0):
         pos = cross.getPos()
         direct = cross.getDirectEnabled()
         if direct == "E":
-            x, y, w, h = pos[0]*BASIC_UNIT, pos[1]*BASIC_UNIT, BASIC_UNIT//3, BASIC_UNIT
+            x, y, w, h = pos[0]*BASIC_UNIT, pos[1]*BASIC_UNIT, BASIC_UNIT//4, BASIC_UNIT
         elif direct == "S":
-            x, y, w, h = pos[0]*BASIC_UNIT, pos[1]*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT//3
+            x, y, w, h = pos[0]*BASIC_UNIT, pos[1]*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT//4
         elif direct == "W":
-            x, y, w, h = (pos[0]+1)*BASIC_UNIT-BASIC_UNIT//3, pos[1]*BASIC_UNIT, BASIC_UNIT//3, BASIC_UNIT
+            x, y, w, h = (pos[0]+1)*BASIC_UNIT-BASIC_UNIT//4, pos[1]*BASIC_UNIT, BASIC_UNIT//4, BASIC_UNIT
         elif direct == "N":
-            x, y, w, h = pos[0]*BASIC_UNIT, (pos[1]+1)*BASIC_UNIT-BASIC_UNIT//3, BASIC_UNIT, BASIC_UNIT//3
+            x, y, w, h = pos[0]*BASIC_UNIT, (pos[1]+1)*BASIC_UNIT-BASIC_UNIT//4, BASIC_UNIT, BASIC_UNIT//4
         x, y, w, h = x+MAIN_BIAS, y+MAIN_BIAS, w, h
         pygame.draw.rect(display_surf, COLOR_CROSS, (x, y, w, h))
         
@@ -187,35 +193,35 @@ def drawMap(map, option=0):
         offset_src = car.getOffsetSrc()
         road_dst = car.getRoadDst()
         offset_dst = car.getOffsetDst()
-        if True:
+        if False: #Start Point
             pos_en, pos_ex = road_src.getPos()
             offset = offset_src
             direct = road_src.getDirect()
             length = road_src.getLength()
             if direct == "E":
-                x, y, w, h = (pos_ex[0]-offset)*BASIC_UNIT, (pos_ex[1]+1)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT
+                x, y, w, h = (pos_ex[0]-offset)*BASIC_UNIT, (pos_ex[1]+1)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT*2//3
             elif direct == "S": 
-                x, y, w, h = (pos_ex[0]-1)*BASIC_UNIT, (pos_ex[1]-offset)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT
+                x, y, w, h = pos_ex[0]*BASIC_UNIT-BASIC_UNIT*2//3, (pos_ex[1]-offset)*BASIC_UNIT, BASIC_UNIT*2//3, BASIC_UNIT
             elif direct == "W":
-                x, y, w, h = (pos_ex[0]+offset)*BASIC_UNIT, (pos_ex[1]-1)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT
+                x, y, w, h = (pos_ex[0]+offset)*BASIC_UNIT, pos_ex[1]*BASIC_UNIT-BASIC_UNIT*2//3, BASIC_UNIT, BASIC_UNIT*2//3
             elif direct == "N":
-                x, y, w, h = (pos_ex[0]+1)*BASIC_UNIT, (pos_ex[1]+offset)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT
+                x, y, w, h = (pos_ex[0]+1)*BASIC_UNIT, (pos_ex[1]+offset)*BASIC_UNIT, BASIC_UNIT*2//3, BASIC_UNIT
             x, y, w, h = x+1, y+1, w-2, h-2
             x, y, w, h = x+MAIN_BIAS, y+MAIN_BIAS, w, h
             pygame.draw.rect(display_surf, color_car, (x, y, w, h))        
-        if True:
+        if True: #End Point
             pos_en, pos_ex = road_dst.getPos()
             offset = offset_dst
             direct = road_dst.getDirect()
             length = road_dst.getLength()
             if direct == "E":
-                x, y, w, h = (pos_ex[0]-offset)*BASIC_UNIT, (pos_ex[1]+1)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT
+                x, y, w, h = (pos_ex[0]-offset)*BASIC_UNIT, (pos_ex[1]+1)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT*2//3
             elif direct == "S": 
-                x, y, w, h = (pos_ex[0]-1)*BASIC_UNIT, (pos_ex[1]-offset)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT
+                x, y, w, h = pos_ex[0]*BASIC_UNIT-BASIC_UNIT*2//3, (pos_ex[1]-offset)*BASIC_UNIT, BASIC_UNIT*2//3, BASIC_UNIT
             elif direct == "W":
-                x, y, w, h = (pos_ex[0]+offset)*BASIC_UNIT, (pos_ex[1]-1)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT
+                x, y, w, h = (pos_ex[0]+offset)*BASIC_UNIT, pos_ex[1]*BASIC_UNIT-BASIC_UNIT*2//3, BASIC_UNIT, BASIC_UNIT*2//3
             elif direct == "N":
-                x, y, w, h = (pos_ex[0]+1)*BASIC_UNIT, (pos_ex[1]+offset)*BASIC_UNIT, BASIC_UNIT, BASIC_UNIT
+                x, y, w, h = (pos_ex[0]+1)*BASIC_UNIT, (pos_ex[1]+offset)*BASIC_UNIT, BASIC_UNIT*2//3, BASIC_UNIT
             x, y, w, h = x+1, y+1, w-2, h-2
             x, y, w, h = x+MAIN_BIAS, y+MAIN_BIAS, w, h
             pygame.draw.rect(display_surf, color_car, (x, y, w, h))        
@@ -251,6 +257,31 @@ def drawMap(map, option=0):
             x, y, w, h = x+1, y+1, w-2, h-2
             x, y, w, h = x+MAIN_BIAS, y+MAIN_BIAS, w, h
             pygame.draw.rect(display_surf, color_car, (x, y, w, h))            
+            
+def drawMessage(num_start, num_move, num_cross, num_end):
+    font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("Start: "+str(num_start), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, 0)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    
+    font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("Move:  "+str(num_move), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, FONT_SIZE)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    
+    font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("Cross: "+str(num_cross), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, FONT_SIZE*2)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    
+    font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("End:   "+str(num_end), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, FONT_SIZE*3)
+    display_surf.blit(textSurfaceObj, textRectObj)
             
 #====入口
 if __name__ == '__main__':

@@ -140,7 +140,7 @@ class Map():
     def getCarList(self):
         return self.__car_list
 
-    def addCarRandom(self, num=1):
+    def addCarRandom(self, num=1, delay=0):
         for _ in range(num):
             index_road_src = np.random.randint(len(self.__road_list))
             index_road_dst = np.random.randint(len(self.__road_list))
@@ -150,6 +150,7 @@ class Map():
             offset_dst = np.random.randint(1, road_dst.getLength()-1)
             car = Car(road_src, offset_src, road_dst, offset_dst, self.__time_car)
             self.__car_list.append(car)
+            time.sleep(delay)
 
     def removeCar(self, car):
         assert car in self.__car_list
@@ -157,7 +158,7 @@ class Map():
 
     def update(self):
         for cross in self.__cross_list:
-            if time.time() - cross.getTimer() > np.random.randint(self.__time_cross*10, self.__time_cross*20) / 10: 
+            if time.time() - cross.getTimer() > self.__time_cross * (1+ np.random.rand()): 
                 cross.updateDirectEnabled()
                 cross.setTimer()
 
@@ -169,6 +170,23 @@ class Map():
         if time.time() - self.__time_last > self.__time_add_car: 
             self.addCarRandom(self.__num_add_car)
             self.__time_last = time.time()
+            
+    def count(self):
+        num_start = 0
+        num_move = 0
+        num_cross = 0
+        num_end = 0
+        for car in self.__car_list:
+            state = car.getState()
+            if state == STATE["START"]:
+                num_start += 1
+            elif state == STATE["MOVE"]:
+                num_move += 1
+            elif state == STATE["CROSS"]:
+                num_cross += 1
+            elif state == STATE["END"]:
+                num_end += 1
+        return num_start, num_move, num_cross, num_end
 
 class Cross():
     def __init__(self, pos):
@@ -419,7 +437,7 @@ class Car():
         return self.__cross_crt
 
     def update(self):
-        if time.time() - self.__time_last < self.__time_car:
+        if time.time() - self.__time_last <= self.__time_car * (1+np.random.rand()):
             return
         if self.__state == STATE["START"]:
             if self.__road_crt.insertCar(self) == True:
@@ -433,23 +451,25 @@ class Car():
                 road.removeCar(self)
             else:
                 car_last = self.__road_crt.getCarLast(self)
-                if car_last != None and self.__offset_crt - car_last.getOffset() > 1:
-                    self.__offset_crt -= 1
-                    self.__time_last = time.time()
-                elif self.__offset_crt > 1:
-                    self.__offset_crt -= 1
-                    self.__time_last = time.time()
-                else:
-                    road = self.getRoad()
-                    cross = road.getCrossExit()
-                    if cross.getDirectEnabled() == road.getDirect() and cross.getCar() == None:
-                        self.__state = STATE["CROSS"]
-                        self.__cross_crt = cross
-                        self.__road_crt = None
-                        self.__offset_crt = None
-                        cross.setCar(self)
-                        road.removeCar(self)
+                if car_last != None:
+                    if self.__offset_crt - car_last.getOffset() > 1:
+                        self.__offset_crt -= 1
                         self.__time_last = time.time()
+                else: 
+                    if self.__offset_crt > 1:
+                        self.__offset_crt -= 1
+                        self.__time_last = time.time()
+                    else:
+                        road = self.getRoad()
+                        cross = road.getCrossExit()
+                        if cross.getDirectEnabled() == road.getDirect() and cross.getCar() == None:
+                            self.__state = STATE["CROSS"]
+                            self.__cross_crt = cross
+                            self.__road_crt = None
+                            self.__offset_crt = None
+                            cross.setCar(self)
+                            road.removeCar(self)
+                            self.__time_last = time.time()
         elif self.__state == STATE["CROSS"]:
             cross = self.__cross_crt
             cross_dst = self.__road_dst.getCrossEntry()
@@ -479,12 +499,15 @@ class Car():
                 #print("direct_next: ", direct_next)
                 road_entry = cross.getRoadEntryDict()[direct_next]
 
-            self.__state = STATE["MOVE"]
-            self.__cross_crt = None
-            self.__road_crt = road_entry
-            self.__offset_crt = road_entry.getLength() - 1
-            cross.clrCar()
-            road_entry.insertCar(self)
+            self.__offset_crt = road_entry.getLength() - 2
+            if road_entry.insertCar(self) == True:
+                self.__state = STATE["MOVE"]
+                self.__cross_crt = None
+                self.__road_crt = road_entry
+                cross.clrCar()
+                self.__time_last = time.time()
+            else:
+                self.__offset_crt = None
         return
 
 if __name__ == '__main__':
