@@ -11,6 +11,7 @@
 import numpy as np
 import time
 import uuid
+import random
 
 BLOCK_MIN = 5
 BLOCK_MAX = 9
@@ -313,6 +314,12 @@ class Road():
     def getLength(self):
         return self.__length
         
+    def isFull(self):
+        if len(self.__car_list) == self.__length - 2:
+            return True
+        else:
+            return False
+        
     def getRoadReverse(self):
         ''' Find the entry cross firstly, then find the cross' exit dict, then select the 'same' direction road, that's the reverse one
         '''
@@ -478,14 +485,16 @@ class Car():
             else: 
                 distance_min = -1
                 direct_next = None
-                for direct in ["E", "S", "W", "N"]:
-                    road_entry = cross.getRoadEntryDict()[direct]
+                direct_list = ["E", "S", "W", "N"]
+                random.shuffle(direct_list)
+                for direct in direct_list:
+                    road = cross.getRoadEntryDict()[direct]
                     cross_next = cross.getCrossNext(direct)
                     if cross_next == None:
                         continue
                     distance = calculateCrossDistance(cross_next, cross_dst)
-                    distance += road_entry.getLength()
-                    distance += len(road_entry.getCarList())
+                    distance += road.getLength()
+                    distance += len(road.getCarList())
                     if distance_min == -1:
                         distance_min = distance
                         direct_next = direct
@@ -498,6 +507,16 @@ class Car():
                     #print("distance: ", distance)
                 #print("direct_next: ", direct_next)
                 road_entry = cross.getRoadEntryDict()[direct_next]
+            
+            if road_entry.isFull() == True:
+                print("========")
+                direct_list = ["E", "S", "W", "N"]
+                random.shuffle(direct_list)
+                for direct in direct_list:
+                    road = cross.getRoadEntryDict()[direct]
+                    if road != None and road.isFull() == False:
+                        road_entry = road
+                        break
 
             self.__offset_crt = road_entry.getLength() - 2
             if road_entry.insertCar(self) == True:
