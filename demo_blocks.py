@@ -14,10 +14,12 @@ from map import Map, Cross, Road, Car, STATE
 FPS = 30
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-BASIC_UNIT = 10
+MAIN_WIDTH = 600
+MAIN_HEIGHT = 600
+BASIC_UNIT = 12
 assert BASIC_UNIT % 2 == 0
-assert WINDOW_WIDTH % BASIC_UNIT == 0
-assert WINDOW_HEIGHT % BASIC_UNIT == 0
+assert MAIN_WIDTH % BASIC_UNIT == 0
+assert MAIN_HEIGHT % BASIC_UNIT == 0
 
 #====颜色
 BLACK           = (  0,   0,   0)
@@ -61,7 +63,7 @@ def showGameOverScreen(score):
     pass
     
 def runGame():
-    map = Map(WINDOW_WIDTH//BASIC_UNIT, WINDOW_HEIGHT//BASIC_UNIT)
+    map = Map(MAIN_WIDTH//BASIC_UNIT, MAIN_HEIGHT//BASIC_UNIT)
     while True:
         #检测退出事件
         checkForQuit()
@@ -166,6 +168,7 @@ def drawMap(map):
             pygame.draw.rect(display_surf, COLOR_CAR, (x, y, w, h))        
         if state == STATE["CROSS"]:
             cross = car.getCross()
+            pos = cross.getPos()
             direct = cross.getDirectEnabled()
             if direct == "E":
                 x, y, w, h = pos[0]*BASIC_UNIT, pos[1]*BASIC_UNIT+BASIC_UNIT//2, BASIC_UNIT, BASIC_UNIT//2

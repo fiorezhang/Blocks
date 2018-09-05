@@ -13,8 +13,8 @@ import time
 
 BLOCK_MIN = 5
 BLOCK_MAX = 9
-TIME_CAR = 0.5
-TIME_CROSS = 1
+TIME_CAR = 1
+TIME_CROSS = 3
 
 STATE = {"START":0, "MOVE":1, "CROSS":2, "END":3}
 
@@ -418,6 +418,7 @@ class Car():
                         self.__offset_crt = None
                         cross.setCar(self)
                         road.removeCar(self)
+                        self.__time_last = time.time()
         elif self.__state == STATE["CROSS"]:
             cross = self.__cross_crt
             cross_dst = self.__road_dst.getCrossEntry()
