@@ -26,10 +26,10 @@ assert BASIC_UNIT % 2 == 0
 assert MAIN_WIDTH % BASIC_UNIT == 0
 assert MAIN_HEIGHT % BASIC_UNIT == 0
 
-BLOCK_MIN = 5
-BLOCK_MAX = 9
+BLOCK_MIN = 8
+BLOCK_MAX = 12
 TIME_ADD_CAR = 0.5
-NUM_ADD_CAR = 1
+NUM_ADD_CAR = 0
 TIME_CROSS = 1
 TIME_CAR = 0.2
 NUM_ADD_CAR_MANUAL = 30
@@ -77,6 +77,10 @@ def showGameOverScreen(score):
     pass
     
 def runGame():
+    pygame.mixer.music.load("resource/sound/BGM01.at3.mp3")
+    pygame.mixer.music.set_volume(0.3)
+    pygame.mixer.music.play(-1, 0.0)
+    
     map = Map(MAIN_WIDTH//BASIC_UNIT, MAIN_HEIGHT//BASIC_UNIT, BLOCK_MIN, BLOCK_MAX, TIME_ADD_CAR, NUM_ADD_CAR, TIME_CROSS, TIME_CAR)
     option = 0
     while True:
@@ -91,6 +95,9 @@ def runGame():
         for i, k in enumerate([K_0, K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9]):
             if key == k:
                 option = i
+                
+        if option == 1:
+            map.addCarRandom(NUM_ADD_CAR_MANUAL, DELAY_ADD_CAR_MANUAL) 
 
         num_start, num_move, num_cross, num_end = map.count()        
                 
