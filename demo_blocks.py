@@ -259,26 +259,26 @@ def drawMap(map, option=0):
             pygame.draw.rect(display_surf, color_car, (x, y, w, h))            
             
 def drawMessage(num_start, num_move, num_cross, num_end):
-    font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
     textSurfaceObj = font.render("Start: "+str(num_start), True, WHITE, BLACK)
     textRectObj = textSurfaceObj.get_rect()
     textRectObj.topleft = (MAP_WIDTH, 0)
     display_surf.blit(textSurfaceObj, textRectObj)
     
-    font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
-    textSurfaceObj = font.render("Move:  "+str(num_move), True, WHITE, BLACK)
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("Move : "+str(num_move), True, WHITE, BLACK)
     textRectObj = textSurfaceObj.get_rect()
     textRectObj.topleft = (MAP_WIDTH, FONT_SIZE)
     display_surf.blit(textSurfaceObj, textRectObj)
     
-    font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
     textSurfaceObj = font.render("Cross: "+str(num_cross), True, WHITE, BLACK)
     textRectObj = textSurfaceObj.get_rect()
     textRectObj.topleft = (MAP_WIDTH, FONT_SIZE*2)
     display_surf.blit(textSurfaceObj, textRectObj)
     
-    font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
-    textSurfaceObj = font.render("End:   "+str(num_end), True, WHITE, BLACK)
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("End  : "+str(num_end), True, WHITE, BLACK)
     textRectObj = textSurfaceObj.get_rect()
     textRectObj.topleft = (MAP_WIDTH, FONT_SIZE*3)
     display_surf.blit(textSurfaceObj, textRectObj)
