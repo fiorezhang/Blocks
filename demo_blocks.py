@@ -13,7 +13,7 @@ from map import Map, Cross, Road, Car, STATE
 #====全局
 FPS = 30
 FONT_SIZE = 20
-BASIC_UNIT = 12
+BASIC_UNIT = 20
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 MAP_WIDTH = 600
@@ -28,8 +28,8 @@ assert MAIN_HEIGHT % BASIC_UNIT == 0
 
 BLOCK_MIN = 8
 BLOCK_MAX = 12
-TIME_ADD_CAR = 0.5
-NUM_ADD_CAR = 0
+TIME_ADD_CAR = 1.0
+NUM_ADD_CAR = 5
 TIME_CROSS = 1
 TIME_CAR = 0.2
 NUM_ADD_CAR_MANUAL = 30
@@ -107,6 +107,7 @@ def runGame():
         drawMessage(num_start, num_move, num_cross, num_end)
         
         pygame.display.update()
+        #clearKeyEvent()
         fps_lock.tick(FPS)
     return score             
 
@@ -165,6 +166,7 @@ def drawMap(map, option=0):
         pos_en, pos_ex = road.getPos()
         direct = road.getDirect()
         length = road.getLength()
+        busy = road.getBusyDegree()
         if direct == "E":
             x, y, w, h = pos_en[0]*BASIC_UNIT, pos_en[1]*BASIC_UNIT+BASIC_UNIT//2, length*BASIC_UNIT, BASIC_UNIT//2
         elif direct == "S":
@@ -175,6 +177,20 @@ def drawMap(map, option=0):
             x, y, w, h = pos_ex[0]*BASIC_UNIT+BASIC_UNIT//2, pos_ex[1]*BASIC_UNIT, BASIC_UNIT//2, length*BASIC_UNIT
         x, y, w, h = x+MAIN_BIAS, y+MAIN_BIAS, w, h
         pygame.draw.rect(display_surf, COLOR_ROAD, (x, y, w, h))
+        if True: #Busy
+            color_busy = []
+            for i in range(3): #RGB
+                color_busy.append(int(RED[i] * busy + COLOR_ROAD[i] * (1-busy)))
+            if direct == "E":
+                x, y, w, h = (pos_en[0]+1)*BASIC_UNIT, (pos_en[1]+1)*BASIC_UNIT-BASIC_UNIT//4, (length-2)*BASIC_UNIT, BASIC_UNIT//4
+            elif direct == "S":
+                x, y, w, h = pos_en[0]*BASIC_UNIT, (pos_en[1]+1)*BASIC_UNIT, BASIC_UNIT//4, (length-2)*BASIC_UNIT
+            elif direct == "W":
+                x, y, w, h = (pos_ex[0]+1)*BASIC_UNIT, pos_ex[1]*BASIC_UNIT, (length-2)*BASIC_UNIT, BASIC_UNIT//4
+            elif direct == "N":
+                x, y, w, h = (pos_ex[0]+1)*BASIC_UNIT-BASIC_UNIT//4, (pos_ex[1]+1)*BASIC_UNIT, BASIC_UNIT//4, (length-2)*BASIC_UNIT
+            x, y, w, h = x+MAIN_BIAS, y+MAIN_BIAS, w, h
+            pygame.draw.rect(display_surf, color_busy, (x, y, w, h))
     
     #Cross
     for cross in map.getCrossList():

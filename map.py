@@ -6,6 +6,15 @@
 出生点和目的地，用红蓝色带alpha通道的颜色标记
 车辆走过的格子保留痕迹，也是alpha通道，若干回合后消失
 车辆挂靠在道路的list内，到了十字路口，经过判断，挂靠到十字路口（独占），然后挂靠到下一条路的list内
+
+增加车辆的速度，1~n档，0档就是不生产新车。可将地图自动生成车辆的功能关掉。想想模式，比如一次加的多间隔大，或者每次加的少间隔短。另外加的位置是随机还是指定（要写一个新函数）
+总的统计数据，产生了多少，到达了多少，平均速度，穿过的十字路口，等等
+随机选中一辆，经历的时间，平均速度，等等
+打印信息规范一下，车辆ID打头，其它信息放一排
+动态地图————用上下左右扩展显示区域？加bias可以做到吗？
+昼夜系统，早晚高峰，显示日期（Metro那样？）
+每条路的侧边加彩色显示拥堵程度
+终点图标 透明度显示
 '''
 
 import numpy as np
@@ -314,11 +323,8 @@ class Road():
     def getLength(self):
         return self.__length
         
-    def isFull(self):
-        if len(self.__car_list) == self.__length - 2:
-            return True
-        else:
-            return False
+    def getBusyDegree(self):
+        return len(self.__car_list) / (self.__length - 2)
         
     def getRoadReverse(self):
         ''' Find the entry cross firstly, then find the cross' exit dict, then select the 'same' direction road, that's the reverse one
@@ -508,13 +514,13 @@ class Car():
                 #print("direct_next: ", direct_next)
                 road_entry = cross.getRoadEntryDict()[direct_next]
             
-            if road_entry.isFull() == True:
+            if road_entry.getBusyDegree() == 1:
                 print("========")
                 direct_list = ["E", "S", "W", "N"]
                 random.shuffle(direct_list)
                 for direct in direct_list:
                     road = cross.getRoadEntryDict()[direct]
-                    if road != None and road.isFull() == False:
+                    if road != None and road.getBusyDegree() < 1:
                         road_entry = road
                         break
 
