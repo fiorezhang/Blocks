@@ -222,7 +222,8 @@ class Map():
         if len(self.__car_list) > 0:
             avg_distance = all_distance / len(self.__car_list)
             avg_time = all_time / len(self.__car_list)
-            avg_speed = avg_distance / avg_time  
+            if avg_time > 0:
+                avg_speed = avg_distance / avg_time  
         return num_start, num_move, num_cross, num_end, round(avg_distance,2), round(avg_time,2), round(avg_speed,2)
 
 class Cross():
