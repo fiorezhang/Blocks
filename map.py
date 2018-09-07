@@ -2,13 +2,8 @@
 #copyright: fiorezhang@sina.com
 
 '''
-每辆车自带时间戳，每次行动前先判断是否在“当前位置”（一个街道段）呆了足够长时间，即记录time_last_move，只有time_current大于它一定阈值才能进行后面的移动判断
-出生点和目的地，用红蓝色带alpha通道的颜色标记
 车辆走过的格子保留痕迹，也是alpha通道，若干回合后消失
-车辆挂靠在道路的list内，到了十字路口，经过判断，挂靠到十字路口（独占），然后挂靠到下一条路的list内
 
-增加车辆的速度，1~n档，0档就是不生产新车。可将地图自动生成车辆的功能关掉。想想模式，比如一次加的多间隔大，或者每次加的少间隔短。另外加的位置是随机还是指定（要写一个新函数）
-总的统计数据，产生了多少，到达了多少，平均速度，穿过的十字路口，等等
 随机选中一辆，经历的时间，平均速度，等等
 动态地图————用上下左右扩展显示区域？加bias可以做到吗？
 昼夜系统，早晚高峰，显示日期（Metro那样？）
@@ -228,7 +223,7 @@ class Map():
             avg_distance = all_distance / len(self.__car_list)
             avg_time = all_time / len(self.__car_list)
             avg_speed = avg_distance / avg_time  
-        return num_start, num_move, num_cross, num_end, avg_distance, avg_time, avg_speed
+        return num_start, num_move, num_cross, num_end, round(avg_distance,2), round(avg_time,2), round(avg_speed,2)
 
 class Cross():
     def __init__(self, pos):

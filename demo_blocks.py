@@ -13,6 +13,7 @@ from map import Map, Cross, Road, Car, STATE
 #====全局
 FPS = 30
 FONT_SIZE = 20
+
 BASIC_UNIT = 20
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
@@ -26,8 +27,8 @@ assert BASIC_UNIT % 2 == 0
 assert MAIN_WIDTH % BASIC_UNIT == 0
 assert MAIN_HEIGHT % BASIC_UNIT == 0
 
-BLOCK_MIN = 6
-BLOCK_MAX = 12
+BLOCK_MIN = 4
+BLOCK_MAX = 8
 TIME_CROSS = 1
 TIME_CAR = 0.2
 
