@@ -26,14 +26,28 @@ assert BASIC_UNIT % 2 == 0
 assert MAIN_WIDTH % BASIC_UNIT == 0
 assert MAIN_HEIGHT % BASIC_UNIT == 0
 
-BLOCK_MIN = 8
+BLOCK_MIN = 6
 BLOCK_MAX = 12
-TIME_ADD_CAR = 1.0
-NUM_ADD_CAR = 5
 TIME_CROSS = 1
 TIME_CAR = 0.2
-NUM_ADD_CAR_MANUAL = 30
-DELAY_ADD_CAR_MANUAL = 0.1
+
+BASIC_TIME_ADD_CAR = 0.2
+BASIC_NUM_ADD_CAR = 1
+
+OPTION_ADD_CAR = \
+[[ 1, 0], 
+ [ 5, 1],
+ [ 4, 1], 
+ [ 3, 1], 
+ [ 2, 1], 
+ [ 1, 1], 
+ [ 1, 2],
+ [ 1, 3],
+ [ 1, 4],
+ [ 1, 5]]
+INIT_TIME_ADD_CAR = OPTION_ADD_CAR[0][0]
+INIT_NUM_ADD_CAR = OPTION_ADD_CAR[0][1]
+
 #====颜色
 BLACK           = (  0,   0,   0)
 WHITE           = (255, 255, 255)
@@ -81,7 +95,7 @@ def runGame():
     pygame.mixer.music.set_volume(0.3)
     pygame.mixer.music.play(-1, 0.0)
     
-    map = Map(MAIN_WIDTH//BASIC_UNIT, MAIN_HEIGHT//BASIC_UNIT, BLOCK_MIN, BLOCK_MAX, TIME_ADD_CAR, NUM_ADD_CAR, TIME_CROSS, TIME_CAR)
+    map = Map(MAIN_WIDTH//BASIC_UNIT, MAIN_HEIGHT//BASIC_UNIT, BLOCK_MIN, BLOCK_MAX, INIT_TIME_ADD_CAR, INIT_NUM_ADD_CAR, TIME_CROSS, TIME_CAR)
     option = 0
     while True:
         #检测退出事件
@@ -90,21 +104,19 @@ def runGame():
         map.update()
         
         key = checkForKeyEvent()
-        if key == K_SPACE:
-            map.addCarRandom(NUM_ADD_CAR_MANUAL, DELAY_ADD_CAR_MANUAL) 
         for i, k in enumerate([K_0, K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9]):
             if key == k:
                 option = i
                 
-        if option == 1:
-            map.addCarRandom(NUM_ADD_CAR_MANUAL, DELAY_ADD_CAR_MANUAL) 
+        map.setTimeAddCar(OPTION_ADD_CAR[option][0] * BASIC_TIME_ADD_CAR)
+        map.setNumAddCar(OPTION_ADD_CAR[option][1] * BASIC_NUM_ADD_CAR) 
 
-        num_start, num_move, num_cross, num_end = map.count()        
+        num_start, num_move, num_cross, num_end, avg_distance, avg_time, avg_speed = map.count()        
                 
         #绘图步骤 --------
         drawBackground()
         drawMap(map, option)
-        drawMessage(num_start, num_move, num_cross, num_end)
+        drawMessage(num_start, num_move, num_cross, num_end, avg_distance, avg_time, avg_speed, OPTION_ADD_CAR[option][0], OPTION_ADD_CAR[option][1])
         
         pygame.display.update()
         #clearKeyEvent()
@@ -281,30 +293,92 @@ def drawMap(map, option=0):
             x, y, w, h = x+MAIN_BIAS, y+MAIN_BIAS, w, h
             pygame.draw.rect(display_surf, color_car, (x, y, w, h))            
             
-def drawMessage(num_start, num_move, num_cross, num_end):
+def drawMessage(num_start, num_move, num_cross, num_end, avg_distance, avg_time, avg_speed, add_car_time, add_car_num):
+    msg_top = 0
+
     font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
-    textSurfaceObj = font.render("Start: "+str(num_start), True, WHITE, BLACK)
+    textSurfaceObj = font.render("Car Number", True, WHITE, BLACK)
     textRectObj = textSurfaceObj.get_rect()
-    textRectObj.topleft = (MAP_WIDTH, 0)
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
     display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
     
     font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
-    textSurfaceObj = font.render("Move : "+str(num_move), True, WHITE, BLACK)
+    textSurfaceObj = font.render("  Start: "+str(num_start), True, WHITE, BLACK)
     textRectObj = textSurfaceObj.get_rect()
-    textRectObj.topleft = (MAP_WIDTH, FONT_SIZE)
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
     display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
     
     font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
-    textSurfaceObj = font.render("Cross: "+str(num_cross), True, WHITE, BLACK)
+    textSurfaceObj = font.render("  Move : "+str(num_move), True, WHITE, BLACK)
     textRectObj = textSurfaceObj.get_rect()
-    textRectObj.topleft = (MAP_WIDTH, FONT_SIZE*2)
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
     display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
     
     font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
-    textSurfaceObj = font.render("End  : "+str(num_end), True, WHITE, BLACK)
+    textSurfaceObj = font.render("  Cross: "+str(num_cross), True, WHITE, BLACK)
     textRectObj = textSurfaceObj.get_rect()
-    textRectObj.topleft = (MAP_WIDTH, FONT_SIZE*3)
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
     display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
+    
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("  End  : "+str(num_end), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
+            
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("Statistics", True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
+    
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("  Dist : "+str(avg_distance), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
+            
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("  Time : "+str(avg_time), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
+            
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("  Speed: "+str(avg_speed), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
+            
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("Option", True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
+    
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("  Time : "+str(add_car_time), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
+            
+    font = pygame.font.Font('resource/font/courbd.ttf', FONT_SIZE)
+    textSurfaceObj = font.render("  Num  : "+str(add_car_num), True, WHITE, BLACK)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.topleft = (MAP_WIDTH, msg_top)
+    display_surf.blit(textSurfaceObj, textRectObj)
+    msg_top += FONT_SIZE
             
 #====入口
 if __name__ == '__main__':

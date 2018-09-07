@@ -10,10 +10,8 @@
 增加车辆的速度，1~n档，0档就是不生产新车。可将地图自动生成车辆的功能关掉。想想模式，比如一次加的多间隔大，或者每次加的少间隔短。另外加的位置是随机还是指定（要写一个新函数）
 总的统计数据，产生了多少，到达了多少，平均速度，穿过的十字路口，等等
 随机选中一辆，经历的时间，平均速度，等等
-打印信息规范一下，车辆ID打头，其它信息放一排
 动态地图————用上下左右扩展显示区域？加bias可以做到吗？
 昼夜系统，早晚高峰，显示日期（Metro那样？）
-每条路的侧边加彩色显示拥堵程度
 终点图标 透明度显示
 '''
 
@@ -29,6 +27,16 @@ TIME_CROSS = 1#3
 TIME_ADD_CAR = 1#5
 
 STATE = {"START":0, "MOVE":1, "CROSS":2, "END":3}
+
+def oppositeDirect(direct):
+    if direct == "E":
+        return "W"
+    elif direct == "S":
+        return "N"
+    elif direct == "W":
+        return "E"
+    elif direct == "N":
+        return "S"
 
 def generateRandList(len, min, max):
     ''' Generate list in [0, x1, x2, x3, ... len]
@@ -59,7 +67,7 @@ def calculateCrossDistance(cross_a, cross_b):
      return abs(pos_a[0]-pos_b[0]) + abs(pos_a[1]-pos_b[1])        
 
 class Map():
-    def __init__(self, w, h, b_min=BLOCK_MIN, b_max=BLOCK_MAX, t_add_car=TIME_ADD_CAR, n_add_car=1, t_cross=TIME_CROSS, t_car=TIME_CAR):
+    def __init__(self, w, h, b_min=BLOCK_MIN, b_max=BLOCK_MAX, t_add_car=TIME_ADD_CAR, n_add_car=0, t_cross=TIME_CROSS, t_car=TIME_CAR):
         self.__w = w
         self.__h = h
         self.__cross_list = []
@@ -150,7 +158,7 @@ class Map():
     def getCarList(self):
         return self.__car_list
 
-    def addCarRandom(self, num=1, delay=0):
+    def addCarRandom(self, num=1):
         for _ in range(num):
             index_road_src = np.random.randint(len(self.__road_list))
             index_road_dst = np.random.randint(len(self.__road_list))
@@ -160,15 +168,28 @@ class Map():
             offset_dst = np.random.randint(1, road_dst.getLength()-1)
             car = Car(road_src, offset_src, road_dst, offset_dst, self.__time_car)
             self.__car_list.append(car)
-            time.sleep(delay)
 
     def removeCar(self, car):
         assert car in self.__car_list
         self.__car_list.remove(car)
 
+    def setTimeAddCar(self, t):
+        self.__time_add_car = t
+
+    def setNumAddCar(self, n):
+        self.__num_add_car = n
+
     def update(self):
         for cross in self.__cross_list:
-            if time.time() - cross.getTimer() > self.__time_cross * (1+ np.random.rand()): 
+            wait_dict = cross.getWaitNum()
+            wait_all = sum(wait_dict.values())
+            direct = cross.getDirectEnabled()
+            if wait_all == 0:
+                prop_direct_crt = 1/4
+            else:
+                prop_direct_crt = wait_dict[direct] / wait_all
+                #print(direct, prop_direct_crt)
+            if time.time() - cross.getTimer() > self.__time_cross * prop_direct_crt + self.__time_car: 
                 cross.updateDirectEnabled()
                 cross.setTimer()
 
@@ -186,6 +207,11 @@ class Map():
         num_move = 0
         num_cross = 0
         num_end = 0
+        all_distance = 0
+        all_time = 0
+        avg_distance = 0
+        avg_time = 0
+        avg_speed = 0
         for car in self.__car_list:
             state = car.getState()
             if state == STATE["START"]:
@@ -196,7 +222,13 @@ class Map():
                 num_cross += 1
             elif state == STATE["END"]:
                 num_end += 1
-        return num_start, num_move, num_cross, num_end
+            all_distance += car.getDistance()
+            all_time += time.time()-car.getTimeStart()
+        if len(self.__car_list) > 0:
+            avg_distance = all_distance / len(self.__car_list)
+            avg_time = all_time / len(self.__car_list)
+            avg_speed = avg_distance / avg_time  
+        return num_start, num_move, num_cross, num_end, avg_distance, avg_time, avg_speed
 
 class Cross():
     def __init__(self, pos):
@@ -271,9 +303,17 @@ class Cross():
             self.__direct = "E"
         return
 
+    def getWaitNum(self):
+        wait_dict = {"E": 0, "S": 0, "W": 0, "N": 0}
+        for direct in ["E", "S", "W", "N"]:
+            wait = 0
+            road = self.__road_ex_dict[direct]
+            if road != None:
+                wait = road.getWaitNum()
+            wait_dict[oppositeDirect(direct)] = wait
+        return wait_dict
+
     def getDirectEnabled(self):
-        ''' enable the direction towards the car's facing direction. Ex: "E" means road from west to east can release the first car
-        '''
         return self.__direct
         
     def getTimer(self):
@@ -326,9 +366,14 @@ class Road():
     def getBusyDegree(self):
         return len(self.__car_list) / (self.__length - 2)
         
+    def getWaitNum(self):
+        num = 0
+        for i, car in enumerate(self.__car_list):
+            if i+1 == car.getOffset():
+                num += 1
+        return num
+
     def getRoadReverse(self):
-        ''' Find the entry cross firstly, then find the cross' exit dict, then select the 'same' direction road, that's the reverse one
-        '''
         return self.__cross_en.getRoadExit(self.__direct)
     
     def getCrossEntry(self):
@@ -414,10 +459,9 @@ class Car():
         self.__time_start = time.time()
         self.__time_last = self.__time_start
         self.__id = uuid.uuid4()
+        self.__distance = 0
 
-        print("ID: ", self.__id)
-        print("SRC: ", road_src.getPos(), "\t", offset_src)
-        print("DST: ", road_dst.getPos(), "\t", offset_dst)
+        print(self.__id, "  SRC: ", road_src.getPos(), offset_src, "  DST: ", road_dst.getPos(), offset_dst)
         
     def getId(self):
         return self.__id
@@ -449,6 +493,12 @@ class Car():
     def getCross(self):
         return self.__cross_crt
 
+    def getDistance(self):
+        return self.__distance
+
+    def getTimeStart(self):
+        return self.__time_start
+
     def update(self):
         if time.time() - self.__time_last <= self.__time_car * (1+np.random.rand()):
             return
@@ -467,10 +517,12 @@ class Car():
                 if car_last != None:
                     if self.__offset_crt - car_last.getOffset() > 1:
                         self.__offset_crt -= 1
+                        self.__distance += 1
                         self.__time_last = time.time()
                 else: 
                     if self.__offset_crt > 1:
                         self.__offset_crt -= 1
+                        self.__distance += 1
                         self.__time_last = time.time()
                     else:
                         road = self.getRoad()
@@ -482,6 +534,7 @@ class Car():
                             self.__offset_crt = None
                             cross.setCar(self)
                             road.removeCar(self)
+                            self.__distance += 1
                             self.__time_last = time.time()
         elif self.__state == STATE["CROSS"]:
             cross = self.__cross_crt
@@ -515,7 +568,7 @@ class Car():
                 road_entry = cross.getRoadEntryDict()[direct_next]
             
             if road_entry.getBusyDegree() == 1:
-                print("========")
+                print(self.__id, "  ==BUSY==")
                 direct_list = ["E", "S", "W", "N"]
                 random.shuffle(direct_list)
                 for direct in direct_list:
@@ -530,6 +583,7 @@ class Car():
                 self.__cross_crt = None
                 self.__road_crt = road_entry
                 cross.clrCar()
+                self.__distance += 1
                 self.__time_last = time.time()
             else:
                 self.__offset_crt = None
