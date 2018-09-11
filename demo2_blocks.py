@@ -120,39 +120,39 @@ def runGame():
                 option = i
 
         if key_d == K_LEFT:
-            bias_direct = "W"
-        elif key_d == K_UP:
-            bias_direct = "N"
-        elif key_d == K_RIGHT:
             bias_direct = "E"
-        elif key_d == K_DOWN:
+        elif key_d == K_UP:
             bias_direct = "S"
+        elif key_d == K_RIGHT:
+            bias_direct = "W"
+        elif key_d == K_DOWN:
+            bias_direct = "N"
 
-        if bias_direct == "W":
+        if bias_direct == "E":
             if time.time() - bias_time_last > BIAS_TIME and bias_w >= BIAS_WIDTH_MIN + BASIC_UNIT:
                 bias_w -= BASIC_UNIT
                 bias_time_last = time.time()
             if key_u == K_LEFT:
                 bias_direct = None
-        elif bias_direct == "N":
+        elif bias_direct == "S":
             if time.time() - bias_time_last > BIAS_TIME and bias_h >= BIAS_HEIGHT_MIN + BASIC_UNIT: 
                 bias_h -= BASIC_UNIT
                 bias_time_last = time.time()
             if key_u == K_UP:
                 bias_direct = None
-        elif bias_direct == "E":
+        elif bias_direct == "W":
             if time.time() - bias_time_last > BIAS_TIME and bias_w <= BIAS_WIDTH_MAX - BASIC_UNIT: 
                 bias_w += BASIC_UNIT
                 bias_time_last = time.time()
             if key_u == K_RIGHT:
                 bias_direct = None
-        elif bias_direct == "S":
+        elif bias_direct == "N":
             if time.time() - bias_time_last > BIAS_TIME and bias_h <= BIAS_HEIGHT_MAX - BASIC_UNIT: 
                 bias_h += BASIC_UNIT
                 bias_time_last = time.time()
             if key_u == K_DOWN:
                 bias_direct = None
-        print("BIAS: ", bias_direct, bias_w, bias_h)
+        #print("BIAS: ", bias_direct, bias_w, bias_h)
              
         map.setTimeAddCar(OPTION_ADD_CAR[option][0] * BASIC_TIME_ADD_CAR)
         map.setNumAddCar(OPTION_ADD_CAR[option][1] * BASIC_NUM_ADD_CAR) 
